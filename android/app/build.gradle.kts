@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.clothotag.clothotag"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "29.0.13113456"   // ← versión del NDK instalada
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
