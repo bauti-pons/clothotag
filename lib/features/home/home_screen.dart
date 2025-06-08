@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../scanner/qr_scanner.dart';
 import '../scanner/nfc_scanner.dart';
+import '../repairs/repairs_list.dart';   // ← añade este import
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -17,7 +18,6 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Botón QR
             ElevatedButton.icon(
               icon: const Icon(Icons.qr_code_scanner),
               label: const Text('Escanear QR'),
@@ -29,8 +29,6 @@ class HomeScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 24),
-
-            // Botón NFC
             ElevatedButton.icon(
               icon: const Icon(Icons.nfc),
               label: const Text('Escanear NFC'),
@@ -38,6 +36,17 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const NfcScannerScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.build),
+              label: const Text('Reparaciones'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RepairsListScreen()),
                 );
               },
             ),
