@@ -1,0 +1,32 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]          # se ejecuta cada vez que hagas merge a main
+  workflow_dispatch:            # permite lanzarlo manualmente desde Actions
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Clona tu repo
+      - uses: actions/checkout@v4
+
+      # 2) Instala Flutter estable
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "stable"
+
+      # 3) Dependencias
+      - run: flutter pub get
+
+      # 4) Compila en modo release
+      - run: flutter build web --release --base-href /clothotag/
+
+      # 5) Publica la carpeta build/web/ a la rama gh-pages
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: build/web          # lo que vamos a publicar
+          branch: gh-pages           # rama de destino
