@@ -1,32 +1,55 @@
+# .github/workflows/deploy_web.yml
+#
+# Publica el build de Flutter Web en GitHub Pages
+# – Entra en acción al hacer push a main *o* a la rama de feature
+#   para que puedas probar antes de fusionar.
+# – También se puede lanzar manualmente desde la pestaña Actions.
+
 name: Deploy Flutter Web to GitHub Pages
 
 on:
   push:
-    branches: [ main, feature/sprint5-marketplace-chat ]          # se ejecuta cada vez que hagas merge a main
-  workflow_dispatch:            # permite lanzarlo manualmente desde Actions
+    branches:
+      - main
+      - feature/sprint5-marketplace-chat   # ← rama de pruebas
+  workflow_dispatch:                       # permite ejecutarlo a mano
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Clona tu repo
-      - uses: actions/checkout@v4
-
-      # 2) Instala Flutter estable
-      - uses: subosito/flutter-action@v2
+      # 1. Clona el repo
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          flutter-version: "stable"
+          fetch-depth: 0   # necesario para que gh-pages conozca el historial
 
-      # 3) Dependencias
-      - run: flutter pub get
+      # 2. Instala Flutter
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable     # último release estable
+          cache: true         # acelera builds posteriores
+          # flutter-version: "3.22.1"  # ← descomenta para fijar versión exacta
 
-      # 4) Compila en modo release
-      - run: flutter build web --release --base-href /clothotag/
+      - name: Show Flutter version
+        run: flutter --version
 
-      # 5) Publica la carpeta build/web/ a la rama gh-pages
+      # 3. Dependencias
+      - name: Run flutter pub get
+        run: flutter pub get
+
+      # 4. Build en modo release
+      - name: Build Flutter Web
+        run: flutter build web --release --base-href /clothotag/
+
+      # 5. Despliega en gh-pages
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          folder: build/web          # lo que vamos a publicar
-          branch: gh-pages           # rama de destino
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          publish_branch: gh-pages          # rama donde se aloja el sitio
+          force_orphan: true                # rama limpia (sólo contenido web)
+          commit_message: "chore(ci): deploy Web from ${{ github.sha }}"
