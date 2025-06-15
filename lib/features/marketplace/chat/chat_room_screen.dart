@@ -1,4 +1,8 @@
-// ----------- solo para pruebas en 2 pestañas del mismo navegador/red -----------
+// Chat P2P únicamente para pruebas locales ‒ abre dos
+// pestañas con la misma roomId y podrás chatear.
+//
+// En producción sustituye la señalización “in-memory” por
+// un servidor (Firestore, Supabase, etc.).
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -13,34 +17,35 @@ class ChatRoomScreen extends StatefulWidget {
 }
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
-  final _msgCtrl = TextEditingController();
-  final _messages = <String>[];
+  // --------------------------- UI -------------------------------------------
+  final _textCtrl = TextEditingController();
+  final List<_Msg> _messages = []; // se pintan en pantalla
 
-  RTCPeerConnection? _peer1;
-  RTCPeerConnection? _peer2;
-  RTCDataChannel? _chat1;
-  RTCDataChannel? _chat2;
+  // ----------------------- WebRTC (loopback) --------------------------------
+  RTCPeerConnection? _peer1, _peer2;
+  RTCDataChannel? _chat1, _chat2;
 
   @override
   void initState() {
     super.initState();
-    _initConnection();
+    _initPeers();
   }
 
-  Future<void> _initConnection() async {
-    final config = <String, dynamic>{
+  Future<void> _initPeers() async {
+    final cfg = {
       'iceServers': [
         {'urls': 'stun:stun.l.google.com:19302'}
       ]
     };
-    _peer1 = await createPeerConnection(config);
-    _peer2 = await createPeerConnection(config);
 
-    // data channel desde peer1 -> peer2
+    _peer1 = await createPeerConnection(cfg);
+    _peer2 = await createPeerConnection(cfg);
+
+    // DataChannel desde peer1 -> peer2
     _chat1 = await _peer1!.createDataChannel('chat', RTCDataChannelInit());
-    _peer2!.onDataChannel = (channel) => _chat2 = channel;
+    _peer2!.onDataChannel = (c) => _chat2 = c;
 
-    // intercambio de SDP
+    // Intercambio SDP
     final offer = await _peer1!.createOffer();
     await _peer1!.setLocalDescription(offer);
     await _peer2!.setRemoteDescription(offer);
@@ -49,35 +54,32 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     await _peer2!.setLocalDescription(answer);
     await _peer1!.setRemoteDescription(answer);
 
-    // intercambio de ICE (local loop)
+    // ICE loopback
     _peer1!.onIceCandidate = (c) => _peer2!.addCandidate(c);
     _peer2!.onIceCandidate = (c) => _peer1!.addCandidate(c);
 
-    // recepción de mensajes
+    // Recepción de mensajes
     _chat1!.onMessage = _onMsg;
     _chat2!.onMessage = _onMsg;
     setState(() {});
   }
 
-  void _onMsg(RTCDataChannelMessage msg) {
-    final text = utf8.decode(msg.binary);
-    setState(() => _messages.add(text));
+  // --------------------- recepción / envío ----------------------------------
+  void _onMsg(RTCDataChannelMessage m) {
+    final txt = utf8.decode(m.binary);
+    setState(() => _messages.add(_Msg(txt, fromMe: false)));
   }
 
   void _send() {
-    final text = _msgCtrl.text.trim();
-    if (text.isEmpty || _chat1 == null) return;
-    _chat1!.send(RTCDataChannelMessage.fromBinary(utf8.encode(text)));
-    _msgCtrl.clear();
+    final txt = _textCtrl.text.trim();
+    if (txt.isEmpty || _chat1 == null) return;
+
+    _chat1!.send(RTCDataChannelMessage.fromBinary(utf8.encode(txt)));
+    setState(() => _messages.add(_Msg(txt, fromMe: true)));
+    _textCtrl.clear();
   }
 
-  @override
-  void dispose() {
-    _peer1?.close();
-    _peer2?.close();
-    super.dispose();
-  }
-
+  // --------------------------- UI -------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,22 +89,48 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           Expanded(
             child: ListView.builder(
               reverse: true,
+              padding: const EdgeInsets.all(12),
               itemCount: _messages.length,
-              itemBuilder: (_, i) => ListTile(title: Text(_messages.reversed.toList()[i])),
+              itemBuilder: (_, i) {
+                final msg = _messages[_messages.length - 1 - i];
+                return Align(
+                  alignment: msg.fromMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: msg.fromMe
+                          ? Colors.green.shade100
+                          : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(msg.text),
+                  ),
+                );
+              },
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding:
+            const EdgeInsets.only(left: 8, right: 8, bottom: 8, top: 4),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _msgCtrl,
-                    decoration: const InputDecoration(hintText: 'Mensaje'),
+                    controller: _textCtrl,
+                    decoration:
+                    const InputDecoration(hintText: 'Mensaje'),
                     onSubmitted: (_) => _send(),
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.send), onPressed: _send)
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  color: Theme.of(context).colorScheme.primary,
+                  onPressed: _send,
+                )
               ],
             ),
           ),
@@ -110,4 +138,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _textCtrl.dispose();
+    _chat1?.close();
+    _chat2?.close();
+    _peer1?.close();
+    _peer2?.close();
+    super.dispose();
+  }
+}
+
+// Modelo interno de mensaje
+class _Msg {
+  final String text;
+  final bool fromMe;
+  _Msg(this.text, {required this.fromMe});
 }
