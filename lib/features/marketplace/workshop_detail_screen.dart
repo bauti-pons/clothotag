@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'models/workshop.dart';
 import 'chat/chat_room_screen.dart';
 
@@ -12,49 +11,57 @@ class WorkshopDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(workshop.name)),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Image.network(
-            workshop.imageUrl,
-            height: 200,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagen con placeholder
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                workshop.imageUrl,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 180,
+                  width: double.infinity,
+                  color: Colors.grey.shade300,
+                  alignment: Alignment.center,
+                  child:
+                  const Icon(Icons.image_not_supported_rounded, size: 48),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(workshop.location,
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Row(
               children: [
-                Text(workshop.location,
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.amber),
-                    Text(workshop.rating.toStringAsFixed(1)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Center(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.chat_bubble),
-                    label: const Text('Chat con taller'),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ChatRoomScreen(roomId: workshop.id),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                const Icon(Icons.star, color: Colors.amber),
+                const SizedBox(width: 4),
+                Text(workshop.rating.toStringAsFixed(1)),
               ],
             ),
-          ),
-        ],
+            const Spacer(),
+            Center(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.chat),
+                label: const Text('Chat con taller'),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatRoomScreen(roomId: workshop.id),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
