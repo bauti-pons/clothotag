@@ -1,32 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 
-import 'firebase_options.dart';        // generado por flutterfire configure
-import 'features/splash/splash_screen.dart';
+import 'features/home/home_screen.dart';
+import 'features/marketplace/data/workshop_repository.dart';   // ← repo mock
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Inicializa Firebase para la plataforma actual (Android, iOS o Web)
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  runApp(const MyApp());
+void main() {
+  runApp(const ClothoTagApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ClothoTagApp extends StatelessWidget {
+  const ClothoTagApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ClothoTag',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
+    return MultiProvider(
+      providers: [
+        // 👇 El repo estará disponible en todo el árbol de widgets
+        Provider<WorkshopRepository>(
+          create: (_) => WorkshopRepository(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'ClothoTag',
+        color: Colors.white,
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme:
+          ColorScheme.fromSeed(seedColor: Colors.indigo).copyWith(
+            surface: const Color(0xFFF9F3FC),
+          ),
+          useMaterial3: true,
+        ),
+        home: const HomeScreen(),
       ),
-      home: const SplashScreen(),   // arranca en SplashScreen
     );
   }
 }
