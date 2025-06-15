@@ -2,7 +2,7 @@ name: Deploy Flutter Web to GitHub Pages
 
 on:
   push:
-    branches: [ main ]          # se ejecuta cada vez que hagas merge a main
+    branches: [ main, feature/sprint5-marketplace-chat ]          # se ejecuta cada vez que hagas merge a main
   workflow_dispatch:            # permite lanzarlo manualmente desde Actions
 
 jobs:
